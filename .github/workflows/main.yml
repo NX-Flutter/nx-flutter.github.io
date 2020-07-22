@@ -1,29 +1,32 @@
-name: Testing the GitHub Pages publication
+name: Jekyll Deploy
 
-on: push
+on:
+  push:
+    branches:
+      # only deploy from master
+      - blog
+  schedule:
+    # redeploy every morning to update unpublished pages
+    - cron: "0 2 * * *"
 
 jobs:
-  jekyll:
-    runs-on: ubuntu-16.04
+  deploy:
+    runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v2
 
-      # Use GitHub Actions' cache to shorten build times and decrease load on servers
-      - uses: actions/cache@v1
+      - name: Cache gems
+        uses: actions/cache@v1
         with:
-          path: vendor/bundle
-          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          path: vendor/gems
+          key: ${{ runner.os }}-build-${{ hashFiles('**/Gemfile.lock') }}
           restore-keys: |
-            ${{ runner.os }}-gems-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
 
-      # Standard usage
-      - uses: helaili/jekyll-action@2.0.3
+      - name: Build & Deploy to GitHub Pages
+        uses: DavidS/jekyll-deploy@master
         env:
-          JEKYLL_PAT: ${{ secrets.JEKYLL_PAT }}
-
-      # Specify the Jekyll source location as a parameter
-      - uses: helaili/jekyll-action@2.0.3
-        env:
-          JEKYLL_PAT: ${{ secrets.JEKYLL_PAT }}
-        with:
-          jekyll_src: "_site"
+          JEKYLL_ENV: production
+          GH_PAGES_TOKEN: ${{ secrets.JEKYLL_PAT }}
